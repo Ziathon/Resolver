@@ -1,0 +1,40 @@
+pip install pandas networkx matplotlib openpyxl
+
+import pandas as pd
+import networkx as nx
+import matplotlib.pyplot as plt
+from openpyxl import load_workbook
+from openpyxl.drawing.image import Image as ExcelImage
+
+# Load Excel file
+excel_file = 'server_dependencies.xlsx'
+sheet_name = 'Sheet1'  # Change if your sheet has a different name
+df = pd.read_excel(excel_file, sheet_name=sheet_name)
+
+# Build graph
+G = nx.DiGraph()
+for _, row in df.iterrows():
+    G.add_edge(f"{row['Source']}", f"{row['Target']}", label=row['Port'])
+
+# Draw graph
+plt.figure(figsize=(12, 8))
+pos = nx.spring_layout(G, k=0.5)
+nx.draw(G, pos, with_labels=True, node_size=3000, node_color='lightblue', arrows=True)
+edge_labels = nx.get_edge_attributes(G, 'label')
+nx.draw_networkx_edge_labels(G, pos, edge_labels=edge_labels)
+plt.title("Server Dependencies (Port Info)")
+plt.axis('off')
+plt.tight_layout()
+
+# Save the graph to an image
+image_path = 'dependency_graph.png'
+plt.savefig(image_path)
+plt.close()
+
+# Optional: Embed image in Excel
+wb = load_workbook(excel_file)
+ws = wb[sheet_name]
+img = ExcelImage(image_path)
+img.anchor = 'E5'  # Adjust location
+ws.add_image(img)
+wb.save('server_dependencies_with_graph.xlsx')
